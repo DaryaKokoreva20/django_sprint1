@@ -1,0 +1,149 @@
+<h2> \blogicum\blogicum\settings.py: </h2>
+
+INSTALLED_APPS = [
+    'blog.apps.BlogConfig',       <!-- \blogicum\blog\apps.py -->
+    'pages.apps.PagesConfig',     <!-- \blogicum\pages\apps.py -->
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+]
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],    <!-- добавить название директории с templates -->
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static_dev',    <!-- добавить название директории со статикой -->
+]
+
+
+<h2> \blogicum\blogicum\urls.py: </h2>
+
+from django.contrib import admin
+from django.urls import include, path
+
+urlpatterns = [
+    path('', include('blog.urls', namespace='blog')),
+    path('about/', include('pages.urls', namespace='pages')),
+    path('pages/', include('pages.urls', namespace='pages')),
+    path('admin/', admin.site.urls),
+]
+
+
+<h2> >\blogicum\blog\urls.py: </h2>
+
+from django.urls import path
+from . import views
+
+app_name = 'blog'
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('posts/<int:id>/', views.post_detail, name='post_detail'),
+    path('category/<slug:category_slug>/', views.category_posts,
+         name='category_posts')
+]
+
+
+<h2> \blogicum\blog\views.py: </h2>
+
+from django.shortcuts import render
+
+posts = [
+    {
+        'id': 0,
+        'location': 'location',
+        'date': 'date',
+        'category': 'category',
+        'text': 'text',
+    },
+]
+
+def index(request):
+    template = 'blog/index.html'
+    context = {'posts': reversed(posts)}
+    return render(request, template, context)
+
+def post_detail(request, id):
+    template = 'blog/detail.html'
+    context = {'post': posts[id]}
+    return render(request, template, context)
+
+def category_posts(request, category_slug):
+    template = 'blog/category.html'
+    filtered_posts = [
+        post for post in posts if post['category'] == category_slug
+    ]
+    context = {'posts': filtered_posts, 'category_slug': category_slug}
+    return render(request, template, context)
+
+
+<h2> \blogicum\pages\urls.py: </h2>
+
+from django.urls import path
+from . import views
+
+app_name = 'pages'
+
+urlpatterns = [
+    path('about/', views.about, name='about'),
+    path('rules/', views.rules, name='rules')
+]
+
+
+<h2> \blogicum\pages\views.py: </h2>
+
+from django.shortcuts import render
+
+def about(request):
+    template = 'pages/about.html'
+    return render(request, template)
+
+def rules(request):
+    template = 'pages/rules.html'
+    return render(request, template)
+
+
+<h2> \blogicum\templates\base.html: </h2>
+
+1. {% load static %}
+2. <link rel="icon" href="{% static 'img/fav/favicon.ico' %}" type="image">
+3. {% block title %}Заголовок{% endblock %}
+4. {% include "includes/header.html" %}
+
+
+<h2> \blogicum\templates\includes\header.html: </h2>
+
+1. {% load static %}
+2. <img src="{% static 'img/logo.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
+3. <a class="nav-link 
+        {% if request.resolver_match.view_name == 'blog:index'%} active {% endif %}" 
+        href="{% url 'blog:index' %}">
+        Лента записей
+    </a>
+
+
+<h2> \blogicum\templates\blog\index.html: </h2>
+
+1. {% extends "base.html" %}
+2. {% for post in posts%}
+3. <li>
+        Категория: <a href="{% url 'blog:category_posts' post.category %}">{{ post.category }}</a>
+    </li>
+4. <a href="{% url 'blog:post_detail' post.id %}">Читать полный текст</a>
+
